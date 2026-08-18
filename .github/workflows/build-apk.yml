@@ -30,6 +30,10 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Build Web App
+        env:
+          VITE_PUBLIC_APP_URL: https://quranc1.lovable.app
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: placeholder-key
         run: npm run build
 
       - name: Sync Capacitor Android
