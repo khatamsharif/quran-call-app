@@ -26,9 +26,18 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Auto Detect Directory & Install
+        run: |
+          if [ -f "package.json" ]; then
+            echo "ROOT_DIR=." >> $GITHUB_ENV
+          else
+            SUBDIR=$(find . -maxdepth 2 -name "package.json" -exec dirname {} \;)
+            echo "ROOT_DIR=$SUBDIR" >> $GITHUB_ENV
+          fi
+
       - name: Install Dependencies
         run: |
-          if [ -d "quran-call-app" ]; then cd quran-call-app; fi
+          cd ${{ env.ROOT_DIR }}
           npm install --legacy-peer-deps
 
       - name: Build Web App
@@ -36,29 +45,28 @@ jobs:
           VITE_PUBLIC_APP_URL: https://quranc1.lovable.app
           VITE_SUPABASE_URL: https://placeholder.supabase.co
           VITE_SUPABASE_PUBLISHABLE_KEY: placeholder-key
+          NODE_ENV: production
         run: |
-          if [ -d "quran-call-app" ]; then cd quran-call-app; fi
-          npm run build
+          cd ${{ env.ROOT_DIR }}
+          npx vite build --emptyOutDir || npm run build
 
       - name: Sync Capacitor Android
         run: |
-          if [ -d "quran-call-app" ]; then cd quran-call-app; fi
+          cd ${{ env.ROOT_DIR }}
           npx cap sync android
 
       - name: Make Gradlew Executable
         run: |
-          if [ -d "quran-call-app" ]; then cd quran-call-app/android; else cd android; fi
+          cd ${{ env.ROOT_DIR }}/android
           chmod +x gradlew
 
       - name: Build Android Debug APK
         run: |
-          if [ -d "quran-call-app" ]; then cd quran-call-app/android; else cd android; fi
-          ./gradlew assembleDebug
+          cd ${{ env.ROOT_DIR }}/android
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
-          path: |
-            quran-call-app/android/app/build/outputs/apk/debug/app-debug.apk
-            android/app/build/outputs/apk/debug/app-debug.apk
+          path: ${{ env.ROOT_DIR }}/android/app/build/outputs/apk/debug/app-debug.apk
